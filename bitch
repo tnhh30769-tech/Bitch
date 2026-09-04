@@ -1,0 +1,203 @@
+-- Sola Script
+-- Desktop-style GUI for Roblox with basic anti-cheat evasion features
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Remove existing UI if present
+local existingUI = game:GetService("CoreGui"):FindFirstChild("SolaScriptUI")
+if existingUI then existingUI:Destroy() end
+
+-- Create ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SolaScriptUI"
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.ResetOnSpawn = false
+
+-- Main Window
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 320, 0, 380)
+MainFrame.Position = UDim2.new(0.35, 0, 0.25, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim2.new(0, 10)
+UICorner.Parent = MainFrame
+
+-- Title Header
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 45)
+Title.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+Title.Text = "✨ SOLA SCRIPT ✨"
+Title.TextColor3 = Color3.fromRGB(0, 220, 255)
+Title.TextSize = 18
+Title.Font = Enum.Font.Garamond
+Title.Parent = MainFrame
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim2.new(0, 10)
+TitleCorner.Parent = Title
+
+-- ==========================================
+-- 1. Fly Function + Anti-Cheat Bypass
+-- ==========================================
+local FlyBtn = Instance.new("TextButton")
+FlyBtn.Size = UDim2.new(0.85, 0, 0, 40)
+FlyBtn.Position = UDim2.new(0.075, 0, 0.16, 0)
+FlyBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+FlyBtn.Text = "Fly: OFF"
+FlyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlyBtn.TextSize = 14
+FlyBtn.Font = Enum.Font.SourceSansBold
+FlyBtn.Parent = MainFrame
+
+local flying = false
+local flySpeed = 50
+local bodyVelocity, bodyGyro
+
+-- Basic Anti-Cheat Bypass (Randomized subtle velocity jitter to evade static speed checks)
+RunService.Stepped:Connect(function()
+    if flying and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = LocalPlayer.Character.HumanoidRootPart
+        local jitter = Vector3.new(math.random(-1, 1)/100, 0, math.random(-1, 1)/100)
+        hrp.Velocity = Vector3.new(0, 0.1, 0) + jitter 
+    end
+end)
+
+FlyBtn.MouseButton1Click:Connect(function()
+    flying = not flying
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+
+    if flying then
+        FlyBtn.Text = "Fly: ON"
+        FlyBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 100)
+
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.Parent = hrp
+
+        bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+        bodyGyro.CFrame = hrp.CFrame
+        bodyGyro.Parent = hrp
+
+        task.spawn(function()
+            while flying do
+                local camera = workspace.CurrentCamera
+                local moveDir = Vector3.new()
+                
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + camera.CFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - camera.CFrame.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - camera.CFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + camera.CFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
+
+                bodyVelocity.Velocity = moveDir * flySpeed
+                bodyGyro.CFrame = camera.CFrame
+                task.wait()
+            end
+        end)
+    else
+        FlyBtn.Text = "Fly: OFF"
+        FlyBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+        if bodyVelocity then bodyVelocity:Destroy() end
+        if bodyGyro then bodyGyro:Destroy() end
+    end
+end)
+
+-- ==========================================
+-- 2. Noclip Function
+-- ==========================================
+local NoclipBtn = Instance.new("TextButton")
+NoclipBtn.Size = UDim2.new(0.85, 0, 0, 40)
+NoclipBtn.Position = UDim2.new(0.075, 0, 0.30, 0)
+NoclipBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+NoclipBtn.Text = "Noclip: OFF"
+NoclipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoclipBtn.TextSize = 14
+NoclipBtn.Font = Enum.Font.SourceSansBold
+NoclipBtn.Parent = MainFrame
+
+local noclip = false
+
+RunService.Stepped:Connect(function()
+    if noclip and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+NoclipBtn.MouseButton1Click:Connect(function()
+    noclip = not noclip
+    if noclip then
+        NoclipBtn.Text = "Noclip: ON"
+        NoclipBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 100)
+    else
+        NoclipBtn.Text = "Noclip: OFF"
+        NoclipBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    end
+end)
+
+-- ==========================================
+-- 3. Bring Player Function
+-- ==========================================
+local TargetInput = Instance.new("TextBox")
+TargetInput.Size = UDim2.new(0.85, 0, 0, 35)
+TargetInput.Position = UDim2.new(0.075, 0, 0.46, 0)
+TargetInput.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+TargetInput.PlaceholderText = "Enter player name..."
+TargetInput.Text = ""
+TargetInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+TargetInput.Font = Enum.Font.SourceSans
+TargetInput.TextSize = 14
+TargetInput.Parent = MainFrame
+
+local BringBtn = Instance.new("TextButton")
+BringBtn.Size = UDim2.new(0.85, 0, 0, 40)
+BringBtn.Position = UDim2.new(0.075, 0, 0.58, 0)
+BringBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+BringBtn.Text = "Bring Target Player"
+BringBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+BringBtn.TextSize = 14
+BringBtn.Font = Enum.Font.SourceSansBold
+BringBtn.Parent = MainFrame
+
+-- Helper function to search for player by partial name
+local function GetPlayerByPartialName(name)
+    name = name:lower()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and (player.Name:lower():find(name) or player.DisplayName:lower():find(name)) then
+            return player
+        end
+    end
+    return nil
+end
+
+BringBtn.MouseButton1Click:Connect(function()
+    local targetText = TargetInput.Text
+    if targetText == "" then return end
+    
+    local targetPlayer = GetPlayerByPartialName(targetText)
+    
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local myChar = LocalPlayer.Character
+        if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+            -- Teleports target player 3 studs in front of local character
+            targetPlayer.Character.HumanoidRootPart.CFrame = myChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
+        end
+    end
+end)
